@@ -1,0 +1,104 @@
+<script
+  src="https://code.jquery.com/jquery-3.3.1.min.js"
+  integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+  crossorigin="anonymous">
+</script>
+<h1>Check Differences Between two JSON files</h1>
+<textarea id="jsonMerged" rows="30" style="width: 98%" disabled>Output</textarea>
+<textarea id="jsonOne" rows="30" style="width: 49%">Merge into this JSON file</textarea>
+<textarea id="jsonTwo" rows="30" style="width: 49%">Merge from this JSON file</textarea><br>
+<button id="submit">Submit</button><button id="swap">Swap</button><button id="create">Merge</button>
+<h2 id="conflictsCount"></h2>
+<h2 id="additionCount"></h2>
+<div id="messages"></div>
+
+<script type="text/javascript">
+var clearedOne = false;
+var clearedTwo = false;
+  $('#swap').click(function(){
+    var temp = $('#jsonOne').val();
+    $('#jsonOne').val($('#jsonTwo').val());
+    $('#jsonTwo').val(temp);
+    alert('Swapped');
+  });
+  $('#jsonOne').click(function(){
+    if(!clearedOne){
+      $(this).val('');
+      clearedOne = true;
+    }
+  });
+  $('#jsonTwo').click(function(){
+    if(!clearedTwo){
+      $(this).val('');
+      clearedTwo = true;
+    }
+  });
+  function findConflicts(merge){
+    var jsonOne = null;
+    var jsonTwo = null;
+    var jsonMerged = {};
+    try{
+      jsonOne = JSON.parse($('#jsonOne').val());
+    }catch(err){
+
+    }
+    try{
+      jsonTwo = JSON.parse($('#jsonTwo').val());
+    }catch(err){
+
+    }
+    var conflicts = 0;
+    var additions = 0;
+    $('#messages').html('');
+    if(jsonOne && jsonTwo){
+      $.each(jsonOne, function(index, element){
+        if(jsonTwo[index] && jsonTwo[index].toUpperCase() !== jsonOne[index].toUpperCase()){
+          $('#messages').append('<div style="color: #a94442;background-color: #f2dede;border-color: #ebccd1;padding: 15px;margin-bottom: 20px;border: 1px solid transparent;border-radius: 4px;"><h3>Existing index:</h3>' +
+          '<p>jsonOne: "' + index + '": "'+ jsonOne[index] +'"</p>' +
+          '<p>jsonTwo: "' + index + '": "'+ jsonTwo[index] +'"</p></div>');
+          if(merge){
+            if(confirm('Conflict at index: ' + index + ' use: \n\n' + jsonOne[index] + ' (OK)\n\nor\n\n' + jsonTwo[index] + ' (CANCEL) ?')){
+              jsonMerged[index] = jsonOne[index];
+            }else{
+              jsonMerged[index] = jsonTwo[index];
+            }
+          }
+          conflicts++;
+        }else{
+          jsonMerged[index] = jsonOne[index];
+        }
+
+      });
+      $('#messages').append('<div id="additions">');
+      $.each(jsonTwo, function(index, element){
+        if(!jsonOne[index]){
+          $('#messages').append('<div style="color: #a94442;background-color: #f2dede;border-color: #ebccd1;padding: 15px;margin-bottom: 20px;border: 1px solid transparent;border-radius: 4px;"><h3>Non-existing index:</h3>' +
+          '<p>jsonTwo: "' + index + '": "'+ jsonTwo[index] +'"</p><br></div>');
+          if(merge){
+            if(confirm('Undefined index at : ' + index + ' add: \n' + jsonTwo[index] + ' (OK)?')){
+              jsonMerged[index] = jsonTwo[index];
+            }
+          }
+          additions++;
+        }
+      });
+      $('#messages').append('</div>');
+      $('#conflictsCount').html('Conflicts: '+ conflicts);
+      $('#additionCount').html('Possible Additions: <a href="#additions">'+ additions + '</a>');
+      if(merge){
+        $('#jsonMerged').val(JSON.stringify(jsonMerged, null, 3));
+        console.log(jsonMerged);
+        $('#create').prop('disabled', false);
+      }
+    }else{
+      alert('Invalid JSON structure!');
+    }
+  }
+  $('#submit').click(function(){
+    findConflicts();
+  });
+  $('#create').click(function(){
+    $(this).prop('disabled', true);
+    findConflicts(true);
+  });
+</script>
